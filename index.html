@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="page_title">Agenda Escolar 2026 - Calendario de Actividades</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- MANIFEST PARA PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="assets/icono.png" type="image/png">
+
+    <!-- SCRIPT DE INTERNACIONALIZACIÓN (15 IDIOMAS) -->
+    <script src="lang.js" defer></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- MENÚ DE IDIOMAS: Centrado exactamente arriba, encima del panel de BENEATH -->
+    <div class="mb-4">
+        <select id="cambiador-idioma" class="bg-slate-900 text-slate-200 border border-slate-800 text-sm rounded px-4 py-2 outline-none cursor-pointer shadow-lg focus:border-sky-500 transition-colors">
+            <option value="es">Español</option>
+            <option value="en">English</option>
+            <option value="pt">Português</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="ko">한국어</option>
+            <option value="zh">中文</option>
+            <option value="ja">日本語</option>
+            <option value="it">Italiano</option>
+            <option value="hi">हिन्दी</option>
+            <option value="ar">العربية</option>
+            <option value="tr">Türkçe</option>
+            <option value="ru">Русский</option>
+            <option value="sv">Svenska</option>
+            <option value="nl">Nederlands</option>
+        </select>
+    </div>
+
+    <!-- CONTENEDOR CENTRAL ÚNICO DE BENEATH -->
+    <div class="w-full max-w-md relative">
+
+        <!-- Capa Anti-Mirada Indiscreta -->
+        <div id="privacy-curtain" class="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center p-6 hidden">
+            <div class="text-center space-y-3">
+                <span class="text-3xl">🔒</span>
+                <h2 class="text-xl font-bold text-emerald-400" data-i18n="curtain_title">PANTALLA PROTEGIDA</h2>
+                <p class="text-xs text-slate-400 max-w-xs" data-i18n="curtain_desc">La sesión ha sido ocultada por seguridad visual en oficina.</p>
+                <button onclick="quitarCortinaPrivacidad()" class="px-4 py-2 bg-emerald-600 text-slate-950 font-bold text-xs rounded-lg cursor-pointer hover:bg-emerald-500" data-i18n="curtain_btn">
+                    Restaurar Pantalla
+                </button>
+            </div>
+        </div>
+
+        <div class="w-full p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl relative">
+            
+            <!-- Encabezado de la App (Camuflaje Escolar) -->
+            <div class="text-center mb-6">
+                <h1 class="text-xl font-bold tracking-wide text-slate-200" data-i18n="app_title">📅 Agenda Escolar 2026</h1>
+                <p class="text-[11px] text-slate-400 mt-1" data-i18n="app_subtitle">Control de Actividades • Avisos • Institucional</p>
+            </div>
+
+            <!-- Vista de Configuración Inicial -->
+            <div id="setup-view" class="space-y-4">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300" data-i18n="setup_title">Configuración de Canal Incógnito</h2>
+               <div>
+                    <label class="block text-xs text-slate-400 mb-1" data-i18n="label_group_name">Nombre de este Grupo o Salón:</label>
+                    <input type="text" id="input-nombre-grupo" placeholder="Ej. 1° A Preescolar o Los Patitos" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1" data-i18n="label_identity_alias">Tu Apodo o Clave de Usuario (Incógnito):</label>
+                    <input type="text" id="input-identity" placeholder="Ej. LUNA, TIGRE o PROF-01" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-emerald-500 uppercase">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1" data-i18n="label_pin">Define un PIN de Acceso (4 dígitos)</label>
+                    <input type="password" id="input-pin" maxlength="4" placeholder="••••" autocomplete="current-password" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 text-center tracking-widest text-xl focus:outline-none focus:border-emerald-500">
+                </div>
+                <button onclick="guardarIdentidad()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold rounded-lg transition-colors cursor-pointer" data-i18n="setup_btn">
+                    Crear y Entrar al Grupo
+                </button>
+            </div>
+
+            <!-- Vista de Acceso con PIN -->
+            <div id="login-view" class="space-y-4 hidden">
+                <div class="text-center">
+                    <p class="text-xs text-slate-400" data-i18n="active_identity_label">Identidad activa:</p>
+                    <p id="display-identity" class="text-xl font-bold text-emerald-400 uppercase">--</p>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1" data-i18n="enter_pin_label">Introduce tu PIN</label>
+                    <input type="password" id="login-pin" maxlength="4" placeholder="••••" autocomplete="current-password" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 text-center tracking-widest text-xl focus:outline-none focus:border-emerald-500">
+                </div>
+                
+                <div>
+                    <button onclick="verificarPin()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold rounded-lg transition-colors cursor-pointer text-xs" data-i18n="unlock_pin_btn">
+                        Desbloquear (PIN)
+                    </button>
+                </div>
+
+                <div class="text-center pt-2">
+                    <button onclick="mostrarSeccionRescate()" class="text-[11px] text-amber-400 hover:underline cursor-pointer" data-i18n="forgot_pin_link">
+                        ¿Olvidaste tu PIN? (Frase de Rescate)
+                    </button>
+                </div>
+
+                <div id="recovery-box" class="hidden p-3 bg-slate-950 border border-amber-800/60 rounded-xl space-y-2 text-xs">
+                    <p class="text-amber-400 font-bold" data-i18n="recovery_title">Rescate de Cero-Conocimiento</p>
+                    <p class="text-slate-400 text-[10px]" data-i18n="recovery_desc">Introduce tu frase secreta de emergencia:</p>
+                    <input type="text" id="input-recovery-phrase" placeholder="palabra1 palabra2 palabra3 palabra4" class="w-full px-2 py-2 bg-slate-900 border border-slate-700 rounded text-slate-100 text-xs" data-i18n-placeholder="recovery_placeholder">
+                </div>
+            </div>
+
+            <!-- Vista Principal: Lista de Grupos -->
+            <div id="main-view" class="space-y-4 hidden">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <div>
+                        <span id="user-role-badge" class="text-[10px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 font-semibold uppercase" data-i18n="role_prefix">ROL: --</span>
+                        <h3 id="logged-user" class="text-lg font-bold uppercase text-slate-200 mt-1">--</h3>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="activarCortinaPrivacidad()" class="text-[11px] bg-slate-800 text-amber-400 hover:bg-slate-700 px-2 py-1 rounded border border-slate-700 cursor-pointer" title="Bloqueo Exprés" data-i18n="hide_btn" data-i18n-title="hide_tooltip">
+                            👁️ Ocultar
+                        </button>
+                        <button onclick="cerrarSesion()" class="text-[11px] bg-rose-950/60 text-rose-400 hover:bg-rose-900/60 px-2 py-1 rounded border border-rose-900/50 cursor-pointer font-semibold" title="Regresar a pantalla de bloqueo" data-i18n="back_btn" data-i18n-title="back_tooltip">
+                            🚪 Regresar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-xs font-semibold text-slate-400 uppercase" data-i18n="active_groups_title">Tus Grupos Activos</h4>
+                    <div onclick="abrirChatGrupo(localStorage.getItem('beneath_grupo_activo') || 'colegio_privado')" class="p-3 bg-slate-950 hover:bg-slate-800 border border-emerald-500/30 rounded-xl cursor-pointer transition-colors flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-emerald-300" id="label-nombre-grupo-ui">🔒 Canal Institucional</p>
+                            <p class="text-xs text-slate-400" data-i18n="group_desc_pesa">Canal Seguro Unificado (72h)</p>
+                        </div>
+                        <span class="text-xs bg-emerald-950 text-emerald-400 px-2 py-1 rounded border border-emerald-800" data-i18n="enter_group_btn">Entrar &rarr;</span>
+                    </div>
+            </div>
+
+            <!-- Vista de Chat del Grupo PESA -->
+            <div id="chat-view" class="space-y-3 hidden">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <div>
+                        <button onclick="volverAGrupos()" class="text-xs text-emerald-400 hover:underline cursor-pointer" data-i18n="back_to_groups_btn">&larr; Volver a Grupos</button>
+                        <h3 class="text-md font-bold text-emerald-300 mt-1">🔵 PESA</h3>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="btn-admin-audit" onclick="alternarPanelAuditoria()" class="hidden px-2 py-1 bg-amber-950 text-amber-400 hover:bg-amber-900 text-[10px] font-bold rounded border border-amber-800 cursor-pointer" data-i18n="audit_members_btn">
+                            📊 Auditoría & Miembros
+                        </button>
+                        <button onclick="activarCortinaPrivacidad()" class="text-[10px] bg-slate-800 text-amber-400 px-2 py-1 rounded border border-slate-700 cursor-pointer" title="Bloqueo Exprés" data-i18n="hide_btn" data-i18n-title="hide_tooltip">
+                            👁️ Ocultar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Panel de Control Gerencial y Expulsión -->
+                <div id="audit-panel" class="hidden p-3 bg-amber-950/20 border border-amber-800/50 rounded-xl space-y-2 text-xs">
+                    <!-- Se llena dinámicamente -->
+                </div>
+
+                <!-- Caja de Mensajes -->
+                <div id="chat-messages" class="h-60 overflow-y-auto space-y-2 p-3 bg-slate-950 rounded-xl border border-slate-800 text-sm">
+                    <!-- Mensajes dinámicos -->
+                </div>
+
+                <!-- Barra de Envío y Archivos -->
+                <div class="space-y-2 pt-2">
+                    <div class="flex gap-2">
+                        <input type="text" id="input-mensaje" placeholder="Escribir mensaje o pegar link (Enter)..." class="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-emerald-500" data-i18n-placeholder="msg_placeholder">
+                        <button onclick="enviarMensaje()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 text-xs font-bold rounded-lg transition-colors cursor-pointer" data-i18n="send_btn">Enviar</button>
+                    </div>
+                    
+                    <input type="file" id="file-selector" class="hidden" onchange="manejarArchivoSeleccionado(event)">
+
+                    <div class="flex justify-between items-center bg-slate-950 p-2 rounded-lg border border-slate-800 text-[11px]">
+                        <span class="text-slate-400" data-i18n="attach_file_label">📎 Adjuntar Archivo / Foto / PDF (Vista In-App)</span>
+                        <button onclick="document.getElementById('file-selector').click()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded border border-slate-700 cursor-pointer font-semibold" data-i18n="select_file_btn">
+                            Seleccionar Archivo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- VISOR MULTIMEDIA FLOTANTE CON ZOOM (Cero-Trace) -->
+    <div id="media-viewer-modal" class="fixed inset-0 bg-slate-950/95 z-50 flex flex-col items-center justify-center p-4 hidden">
+        <div class="absolute top-4 right-4 flex gap-3 items-center">
+            <span id="media-viewer-title" class="text-xs font-semibold text-slate-300 max-w-[200px] truncate hidden md:inline"></span>
+            <button onclick="cerrarVisorSeguro()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-lg cursor-pointer" data-i18n="close_btn">
+                ✕ Cerrar
+            </button>
+        </div>
+        
+        <div class="w-full h-full flex items-center justify-center overflow-auto p-2">
+            <div id="media-viewer-content" class="max-w-4xl max-h-[85vh] flex flex-col items-center justify-center">
+                <!-- Visor dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Script como módulo -->
+    <script type="module" src="script.js"></script>
+</body>
+</html>
