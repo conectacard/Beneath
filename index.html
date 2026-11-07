@@ -128,32 +128,33 @@
                 </div>
 
                 <div class="space-y-2">
-                    <h4 class="text-xs font-semibold text-slate-400 uppercase" data-i18n="active_groups_title">Tus Grupos Activos</h4>
-                    <div onclick="abrirChatGrupo(localStorage.getItem('beneath_grupo_activo') || 'colegio_privado')" class="p-3 bg-slate-950 hover:bg-slate-800 border border-emerald-500/30 rounded-xl cursor-pointer transition-colors flex justify-between items-center">
-                        <div>
-                            <p class="font-bold text-emerald-300" id="label-nombre-grupo-ui">🔒 Canal Institucional</p>
-                            <p class="text-xs text-slate-400" data-i18n="group_desc_pesa">Canal Seguro Unificado (72h)</p>
-                        </div>
-                        <span class="text-xs bg-emerald-950 text-emerald-400 px-2 py-1 rounded border border-emerald-800" data-i18n="enter_group_btn">Entrar &rarr;</span>
-                    </div>
+    <h4 class="text-xs font-semibold text-slate-400 uppercase" data-i18n="active_groups_title">Tus Grupos Activos</h4>
+    <div onclick="abrirChatGrupo(localStorage.getItem('beneath_grupo_activo') || 'colegio_privado')" class="p-3 bg-slate-950 hover:bg-slate-800 border border-emerald-500/30 rounded-xl cursor-pointer transition-colors flex justify-between items-center">
+        <div>
+            <p class="font-bold text-emerald-300" id="label-nombre-grupo-ui">🔒 Canal Institucional</p>
+            <p class="text-xs text-slate-400" data-i18n="group_desc_pesa">Canal Seguro Unificado (72h)</p>
+        </div>
+        <span class="text-xs bg-emerald-950 text-emerald-400 px-2 py-1 rounded border border-emerald-800" data-i18n="enter_group_btn">Entrar &rarr;</span>
+    </div>
+</div>
             </div>
 
             <!-- Vista de Chat del Grupo PESA -->
             <div id="chat-view" class="space-y-3 hidden">
-                <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                    <div>
-                        <button onclick="volverAGrupos()" class="text-xs text-emerald-400 hover:underline cursor-pointer" data-i18n="back_to_groups_btn">&larr; Volver a Grupos</button>
-                        <h3 class="text-md font-bold text-emerald-300 mt-1">🔵 PESA</h3>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button id="btn-admin-audit" onclick="alternarPanelAuditoria()" class="hidden px-2 py-1 bg-amber-950 text-amber-400 hover:bg-amber-900 text-[10px] font-bold rounded border border-amber-800 cursor-pointer" data-i18n="audit_members_btn">
-                            📊 Auditoría & Miembros
-                        </button>
-                        <button onclick="activarCortinaPrivacidad()" class="text-[10px] bg-slate-800 text-amber-400 px-2 py-1 rounded border border-slate-700 cursor-pointer" title="Bloqueo Exprés" data-i18n="hide_btn" data-i18n-title="hide_tooltip">
-                            👁️ Ocultar
-                        </button>
-                    </div>
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <div>
+                    <button onclick="volverAGrupos()" class="text-xs text-emerald-400 hover:underline cursor-pointer" data-i18n="back_to_groups_btn">&larr; Volver a Grupos</button>
+                    <h3 id="chat-nombre-grupo" class="text-md font-bold text-emerald-300 mt-1">🔵 Grupo</h3>
                 </div>
+                <div class="flex items-center gap-2">
+                    <button id="btn-admin-audit" onclick="alternarPanelAuditoria()" class="hidden px-2 py-1 bg-amber-950 text-amber-400 hover:bg-amber-900 text-[10px] font-bold rounded border border-amber-800 cursor-pointer" data-i18n="audit_members_btn">
+                        📊 Auditoría & Miembros
+                    </button>
+                    <button onclick="activarCortinaPrivacidad()" class="text-[10px] bg-slate-800 text-amber-400 px-2 py-1 rounded border border-slate-700 cursor-pointer" title="Bloqueo Exprés" data-i18n="hide_btn" data-i18n-title="hide_tooltip">
+                        👁️ Ocultar
+                    </button>
+                </div>
+            </div>
 
                 <!-- Panel de Control Gerencial y Expulsión -->
                 <div id="audit-panel" class="hidden p-3 bg-amber-950/20 border border-amber-800/50 rounded-xl space-y-2 text-xs">
@@ -161,16 +162,16 @@
                 </div>
 
                 <!-- Caja de Mensajes -->
-                <div id="chat-messages" class="h-60 overflow-y-auto space-y-2 p-3 bg-slate-950 rounded-xl border border-slate-800 text-sm">
+                <div id="chat-messages" class="h-[480px] overflow-y-auto space-y-2 p-3 bg-slate-950 rounded-xl border border-slate-800 text-sm">
                     <!-- Mensajes dinámicos -->
                 </div>
 
                 <!-- Barra de Envío y Archivos -->
                 <div class="space-y-2 pt-2">
-                    <div class="flex gap-2">
-                        <input type="text" id="input-mensaje" placeholder="Escribir mensaje o pegar link (Enter)..." class="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-emerald-500" data-i18n-placeholder="msg_placeholder">
-                        <button onclick="enviarMensaje()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 text-xs font-bold rounded-lg transition-colors cursor-pointer" data-i18n="send_btn">Enviar</button>
-                    </div>
+                    <div class="flex gap-2 items-end">
+    <textarea id="input-mensaje" class="w-full bg-slate-900 text-white text-sm p-3 rounded-lg border border-slate-700 focus:outline-none focus:border-emerald-500 resize-none h-24" placeholder="Escribe un mensaje o pega tu enlace..." data-i18n-placeholder="chat_placeholder"></textarea>
+    <button onclick="enviarMensajeTexto()" class="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold rounded-lg transition-colors cursor-pointer h-24 flex items-center justify-center" data-i18n="send_btn">Enviar</button>
+</div>
                     
                     <input type="file" id="file-selector" class="hidden" onchange="manejarArchivoSeleccionado(event)">
 

@@ -1,50 +1,41 @@
-// --- LÓGICA DE BENEATH CON NUBE EN TIEMPO REAL (PESA) ---
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+// --- LÓGICA DE BENEATH CON SUPABASE Y AISLAMIENTO POR URL (?grupo=) ---
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-const firebaseConfig = {
-    databaseURL: "https://beneath-pesa-default-rtdb.firebaseio.com/"
-};
+// Credenciales independientes de su proyecto Supabase
+const SUPABASE_URL = "https://fjtzyxnpgxxsducxxobx.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_HyGyfvWNs-VSoHGXNNTpgA_465UsJPs";
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Recuperamos dinámicamente el identificador del grupo o usamos uno institucional por defecto
-const idGrupoActual = localStorage.getItem("beneath_grupo_activo") || "instituto_general";
-const mensajesRef = ref(db, `mensajes_${idGrupoActual}`);
+// 1. Obtener el grupo actual desde la URL (ej: ?grupo=1a-preescolar) o respaldo local
+function obtenerGrupoActual() {
+    const params = new URLSearchParams(window.location.search);
+    const grupoUrl = params.get('grupo');
+    if (grupoUrl) {
+        const limpio = grupoUrl.toLowerCase().trim();
+        localStorage.setItem("beneath_grupo_activo", limpio);
+        return limpio;
+    }
+    return localStorage.getItem("beneath_grupo_activo") || "instituto_general";
+}
+
+const idGrupoActual = obtenerGrupoActual();
+
 document.addEventListener("DOMContentLoaded", () => {
-    limpiarContenidoExpiradoNube();
     checarEstadoIdentidad();
     inicializarEventosTecladoGlobales();
 });
 
-function limpiarContenidoExpiradoNube() {
-    onValue(mensajesRef, (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
-       
-        const ahora = Date.now();
-        const tiempoLimite = 72 * 60 * 60 * 1000;
-
-        Object.keys(data).forEach(key => {
-            const item = data[key];
-            if ((ahora - item.timestamp) >= tiempoLimite) {
-                remove(ref(db, `mensajes_pesa/${key}`));
-            }
-        });
-    }, { onlyOnce: true });
-}
-
 function checarEstadoIdentidad() {
     const identidadGuardada = localStorage.getItem("beneath_identity");
-   
+    
     if (identidadGuardada) {
         const expulsados = JSON.parse(localStorage.getItem("beneath_expulsados")) || [];
         if (expulsados.includes(identidadGuardada)) {
             const langActual = localStorage.getItem('sipv_lang') || 'es';
             const msgRevocado = (typeof DICTIONARY !== 'undefined' && DICTIONARY[langActual] && DICTIONARY[langActual].alert_revoked)
                 || "Tu acceso ha sido revocado por el administrador.";
-           
+            
             alert(msgRevocado);
             localStorage.removeItem("beneath_identity");
             localStorage.removeItem("beneath_pin");
@@ -55,13 +46,13 @@ function checarEstadoIdentidad() {
         document.getElementById("setup-view").classList.add("hidden");
         document.getElementById("login-view").classList.remove("hidden");
         document.getElementById("display-identity").innerText = identidadGuardada;
-       
+        
         const loginPin = document.getElementById("login-pin");
         if (loginPin) loginPin.focus();
     } else {
         document.getElementById("setup-view").classList.remove("hidden");
         document.getElementById("login-view").classList.add("hidden");
-       
+        
         const inputIdentity = document.getElementById("input-identity");
         if (inputIdentity) inputIdentity.focus();
     }
@@ -92,17 +83,40 @@ function inicializarEventosTecladoGlobales() {
     if (inputPin) inputPin.addEventListener("keypress", registrarConEnter);
 }
 
-window.guardarIdentidad = function() {
+window.guardarIdentidad = async function() {
     const nombre = document.getElementById("input-identity").value.trim().toUpperCase();
     const pin = document.getElementById("input-pin").value.trim();
+    const nombreGrupoInput = document.getElementById("input-nombre-grupo") ? document.getElementById("input-nombre-grupo").value.trim() : "";
 
     if (!nombre || pin.length !== 4) {
-        const langActual = localStorage.getItem('sipv_lang') || 'es';
-        const msgAlerta = (typeof DICTIONARY !== 'undefined' && DICTIONARY[langActual] && DICTIONARY[langActual].alert_invalid_identity)
-            || "Por favor escribe una identidad válida y un PIN exacto de 4 dígitos.";
-       
-        alert(msgAlerta);
+        alert("Por favor escribe una identidad válida y un PIN exacto de 4 dígitos.");
         return;
+    }
+
+    if (nombreGrupoInput) {
+        localStorage.setItem("beneath_nombre_grupo_visible", nombreGrupoInput);
+    }
+
+    // Verificamos vigencia y límite de miembros en la tabla 'grupos' de Supabase
+    const { data: grupoData, error: errorGrupo } = await supabase
+        .from('grupos')
+        .select('*')
+        .eq('id', idGrupoActual)
+        .single();
+
+    if (grupoData) {
+        const hoy = new Date();
+        const fechaExp = new Date(grupoData.fecha_expiracion);
+        if (hoy > fechaExp) {
+            alert("⚠️ La suscripción anual de este canal ha concluido. Contacte a la administración.");
+            return;
+        }
+
+        let miembrosActuales = JSON.parse(localStorage.getItem("beneath_miembros")) || [];
+        if (!miembrosActuales.includes(nombre) && miembrosActuales.length >= grupoData.limite_miembros) {
+            alert(`⚠️ Este grupo ha alcanzado su límite máximo de ${grupoData.limite_miembros} licencias suscritas.`);
+            return;
+        }
     }
 
     if (!localStorage.getItem("beneath_admin_creator")) {
@@ -195,7 +209,6 @@ function otorgarAccesoExitoso() {
    
     document.getElementById("logged-user").innerText = usuario;
 
-    // Pintar dinámicamente el nombre personalizado del colegio en la interfaz
     const nombreGrupoCustom = localStorage.getItem("beneath_nombre_grupo_visible");
     const labelGrupoUI = document.getElementById("label-nombre-grupo-ui");
     if (nombreGrupoCustom && labelGrupoUI) {
@@ -239,10 +252,14 @@ window.abrirChatGrupo = function(nombreGrupo) {
     document.getElementById("main-view").classList.add("hidden");
     document.getElementById("chat-view").classList.remove("hidden");
    
-    // Guardamos y actualizamos el grupo activo de forma dinámica
     localStorage.setItem("beneath_grupo_activo", nombreGrupo);
     
-    registrarLecturaUsuarioActual();
+    const nombreGrupoCustom = localStorage.getItem("beneath_nombre_grupo_visible") || nombreGrupo;
+    const tituloChat = document.getElementById("chat-nombre-grupo");
+    if (tituloChat) {
+        tituloChat.innerText = `🔵 ${nombreGrupoCustom}`;
+    }
+
     escucharMensajesEnVivo();
 
     const input = document.getElementById("input-mensaje");
@@ -357,39 +374,84 @@ function obtenerHoraActual() {
     return ah.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+// Escuchar mensajes en tiempo real filtrados por el grupo actual en Supabase
 function escucharMensajesEnVivo() {
-    onValue(mensajesRef, (snapshot) => {
-        procesarSnapshotMensajes(snapshot);
-    });
+    cargarMensajesSupabase();
+    
+    supabase
+      .channel('public:mensajes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mensajes', filter: `grupo_id=eq.${idGrupoActual}` }, payload => {
+          cargarMensajesSupabase();
+      })
+      .subscribe();
 }
 
-function registrarLecturaUsuarioActual() {
-    const usuarioActivo = localStorage.getItem("beneath_identity");
-    if (!usuarioActivo) return;
+async function cargarMensajesSupabase() {
+    const { data, error } = await supabase
+        .from('mensajes')
+        .select('*')
+        .eq('grupo_id', idGrupoActual)
+        .order('id', { ascending: true });
 
-    onValue(mensajesRef, (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
+    if (error) {
+        console.error("Error al cargar mensajes:", error);
+        return;
+    }
 
-        const horaLectura = obtenerHoraActual();
-        Object.keys(data).forEach(idMensaje => {
-            let item = data[idMensaje];
-            if (!item.vistos) item.vistos = {};
-           
-            if (!item.vistos[usuarioActivo]) {
-                item.vistos[usuarioActivo] = horaLectura;
-                set(ref(db, `mensajes_pesa/${idMensaje}`), item);
+    let dataObj = {};
+    if (data) {
+        data.forEach(row => {
+            try {
+                let parsedMensaje = JSON.parse(row.mensaje);
+                dataObj[row.id] = parsedMensaje;
+            } catch (e) {
+                dataObj[row.id] = {
+                    usuario: row.autor || "ANÓNIMO",
+                    texto: row.mensaje,
+                    esArchivo: false,
+                    hora: "--:--"
+                };
             }
         });
-    }, { onlyOnce: true });
+    }
+    
+    procesarSnapshotMensajes({ val: () => Object.keys(dataObj).length > 0 ? dataObj : null });
 }
 
-function guardarMensajeEnNube(nuevoItem) {
+async function guardarMensajeEnNube(nuevoItem) {
     nuevoItem.vistos = {};
     nuevoItem.vistos[nuevoItem.usuario] = nuevoItem.hora;
 
-    const nuevoMensajeRef = push(mensajesRef);
-    set(nuevoMensajeRef, nuevoItem);
+    const { data, error } = await supabase
+        .from('mensajes')
+        .insert([
+            {
+                grupo_id: idGrupoActual,
+                autor: nuevoItem.usuario,
+                mensaje: JSON.stringify(nuevoItem)
+            }
+        ]);
+
+    if (error) {
+        console.error("Error al guardar en Supabase:", error);
+        alert("Error al enviar el mensaje. Verifique su conexión.");
+        return;
+    }
+
+    cargarMensajesSupabase();
+}
+
+window.eliminarMensajePorFirebaseId = async function(idMensaje) {
+    const { error } = await supabase
+        .from('mensajes')
+        .delete()
+        .eq('id', idMensaje);
+
+    if (error) {
+        console.error("Error al eliminar:", error);
+    } else {
+        cargarMensajesSupabase();
+    }
 }
 
 function procesarSnapshotMensajes(snapshot) {
@@ -500,10 +562,6 @@ function procesarSnapshotMensajes(snapshot) {
     });
 
     contenedorChat.scrollTop = contenedorChat.scrollHeight;
-}
-
-window.eliminarMensajePorFirebaseId = function(idMensaje) {
-    remove(ref(db, `mensajes_pesa/${idMensaje}`));
 }
 
 window.enviarMensaje = function() {
