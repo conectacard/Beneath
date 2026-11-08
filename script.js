@@ -696,10 +696,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (selectorIdioma) {
         const langGuardado = localStorage.getItem('sipv_lang') || 'es';
         selectorIdioma.value = langGuardado;
-        window.cambiarIdiomaUI(langGuardado);
+        if (typeof window.cambiarIdiomaUI === 'function') {
+            window.cambiarIdiomaUI(langGuardado);
+        }
 
         selectorIdioma.addEventListener("change", (e) => {
-            window.cambiarIdiomaUI(e.target.value);
+            if (typeof window.cambiarIdiomaUI === 'function') {
+                window.cambiarIdiomaUI(e.target.value);
+            }
             if (typeof actualizarPanelGerencialAdmin === 'function') {
                 const panel = document.getElementById("audit-panel");
                 if (panel && !panel.classList.contains("hidden")) {
@@ -709,11 +713,11 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+
 window.enviarMensajeTexto = function() {
     const input = document.getElementById('input-mensaje');
     if (!input || !input.value.trim()) return;
     
-    // Dispara el envío de forma automática
     const evento = new KeyboardEvent('keypress', { key: 'Enter', bubbles: true });
     input.dispatchEvent(evento);
 };
