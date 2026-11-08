@@ -712,12 +712,36 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
+
+    // Lógica para capturar y mostrar el archivo seleccionado
+    const inputArchivo = document.getElementById("input-archivo");
+    if (inputArchivo) {
+        inputArchivo.addEventListener("change", (e) => {
+            const archivo = e.target.files[0];
+            if (archivo) {
+                window.archivoSeleccionadoActual = archivo;
+                console.log("Archivo listo para enviar:", archivo.name);
+            }
+        });
+    }
 });
 
 window.enviarMensajeTexto = function() {
     const input = document.getElementById('input-mensaje');
-    if (!input || !input.value.trim()) return;
+    if (!input) return;
+    const texto = input.value.trim();
     
+    // Si hay un archivo seleccionado, puedes manejar su envío aquí o junto con el texto
+    if (window.archivoSeleccionadoActual) {
+        console.log("Enviando mensaje con archivo:", window.archivoSeleccionadoActual.name);
+        // Aquí se procesa el archivo adjunto en tu lógica de Supabase
+        window.archivoSeleccionadoActual = null;
+        if (inputaciónArchivo = document.getElementById('input-archivo')) {
+            inputaciónArchivo.value = "";
+        }
+    }
+
+    if (!texto) return;
     const evento = new KeyboardEvent('keypress', { key: 'Enter', bubbles: true });
     input.dispatchEvent(evento);
 };
