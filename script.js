@@ -728,20 +728,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
 window.enviarMensajeTexto = function() {
     const input = document.getElementById('input-mensaje');
-    if (!input) return;
-    const texto = input.value.trim();
+    const inputArchivo = document.getElementById('input-archivo');
     
-    // Si hay un archivo seleccionado, puedes manejar su envío aquí o junto con el texto
-    if (window.archivoSeleccionadoActual) {
-        console.log("Enviando mensaje con archivo:", window.archivoSeleccionadoActual.name);
-        // Aquí se procesa el archivo adjunto en tu lógica de Supabase
+    const texto = input ? input.value.trim() : "";
+    const archivo = window.archivoSeleccionadoActual || (inputArchivo && inputArchivo.files[0] ? inputArchivo.files[0] : null);
+
+    // Si hay un archivo seleccionado, lo procesamos para enviarlo al chat/Supabase
+    if (archivo) {
+        console.log("Enviando mensaje con archivo:", archivo.name);
+        
+        // Si tu proyecto utiliza FileReader o subida directa a Supabase, lo integramos aquí de forma limpia:
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Aquí se genera el payload o inserción a tu base de datos de Supabase con el archivo (imagen, video o PDF)
+            if (typeof window.guardarMensajeConArchivoEnSupabase === 'function') {
+                window.guardarMensajeConArchivoEnSupabase(archivo, e.target.result, texto);
+            }
+        };
+        reader.readAsDataURL(archivo);
+
+        // Limpiamos la selección de archivo
         window.archivoSeleccionadoActual = null;
-        if (inputaciónArchivo = document.getElementById('input-archivo')) {
-            inputaciónArchivo.value = "";
+        if (inputArchivo) {
+            inputArchivo.value = "";
         }
+        if (input) {
+            input.value = "";
+        }
+        return;
     }
 
-    if (!texto) return;
+    // Si solo es texto
+    if (!input || !texto) return;
     const evento = new KeyboardEvent('keypress', { key: 'Enter', bubbles: true });
     input.dispatchEvent(evento);
 };
