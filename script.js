@@ -219,9 +219,12 @@ function otorgarAccesoExitoso() {
     const btnAudit = document.getElementById("btn-admin-audit");
    
     const langActual = localStorage.getItem('sipv_lang') || 'es';
-    const txtAdmin = (typeof DICTIONARY !== 'undefined' && DICTIONARY[langActual] && DICTIONARY[langActual].role_admin) || "ADMIN / DIRECTOR";
-    const txtMember = (typeof DICTIONARY !== 'undefined' && DICTIONARY[langActual] && DICTIONARY[langActual].role_member) || "INTEGRANTE";
-    const rolePrefix = (typeof DICTIONARY !== 'undefined' && DICTIONARY[langActual] && DICTIONARY[langActual].role_prefix) || "ROL:";
+        const dict = (typeof DICTIONARY !== 'undefined' && DICTIONARY[langActual]) ? DICTIONARY[langActual] : {};
+
+        const tDeleteTitle = dict.chat_delete_title || "Eliminar contenido";
+        const tExpiresIn = dict.chat_expires_in || "Expira en 72h (Autodestrucción)";
+        const tSecureFile = dict.chat_secure_file || "Archivo Seguro";
+        const tTransmitted = dict.chat_transmitted || "Transmitido";
 
     if (usuario === adminCreador) {
         badgeRole.innerText = `${rolePrefix} ${txtAdmin}`;
@@ -514,6 +517,9 @@ function procesarSnapshotMensajes(snapshot) {
             }
         }
 
+        const langActual = localStorage.getItem('sipv_lang') || 'es';
+        const dict = (typeof DICTIONARY !== 'undefined' && DICTIONARY[langActual]) ? DICTIONARY[langActual] : {};
+
         let htmlAuditoriaLectura = "";
         if (usuarioActual === adminCreador) {
             let vistosObj = item.vistos || {};
@@ -522,9 +528,8 @@ function procesarSnapshotMensajes(snapshot) {
                 listaVistosTextos.push(`${miembro} (${vistosObj[miembro]})`);
             }
            
-            const langActual = localStorage.getItem('sipv_lang') || 'es';
-            const tNoneYet = (typeof DICTIONARY !== 'undefined' && DICTIONARY[langActual] && DICTIONARY[langActual].chat_none_yet) || "Ninguno aún";
-            const tAuditSeenBy = (typeof DICTIONARY !== 'undefined' && DICTIONARY[langActual] && DICTIONARY[langActual].chat_audit_seen_by) || "Auditoría Gerencial - Visto por:";
+            const tNoneYet = dict.chat_none_yet || "Ninguno aún";
+            const tAuditSeenBy = dict.chat_audit_seen_by || "Auditoría Gerencial - Visto por:";
 
             let resumenLectura = listaVistosTextos.length > 0 ? listaVistosTextos.join(", ") : tNoneYet;
            
@@ -536,11 +541,10 @@ function procesarSnapshotMensajes(snapshot) {
             `;
         }
 
-        const langActual = localStorage.getItem('sipv_lang') || 'es';
-        const tDeleteTitle = (typeof DICTIONARY !== 'undefined' && DICTIONARY[langActual] && DICTIONARY[langActual].chat_delete_title) || "Eliminar contenido";
-        const tExpiresIn = (typeof DICTIONARY !== 'undefined' && DICTIONARY[langActual] && DICTIONARY[langActual].chat_expires_in) || "Expira en 72h (Autodestrucción)";
-        const tSecureFile = (typeof DICTIONARY !== 'undefined' && DICTIONARY[langActual] && DICTIONARY[langActual].chat_secure_file) || "Archivo Seguro";
-        const tTransmitted = (typeof DICTIONARY !== 'undefined' && DICTIONARY[langActual] && DICTIONARY[langActual].chat_transmitted) || "Transmitido";
+        const tDeleteTitle = dict.chat_delete_title || "Eliminar contenido";
+        const tExpiresIn = dict.chat_expires_in || "Expira en 72h (Autodestrucción)";
+        const tSecureFile = dict.chat_secure_file || "Archivo Seguro";
+        const tTransmitted = dict.chat_transmitted || "Transmitido";
 
         div.innerHTML = `
             <div class="flex justify-between items-center">
