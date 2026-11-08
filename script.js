@@ -709,3 +709,11 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+window.enviarMensajeTexto = function() {
+    const input = document.getElementById('input-mensaje');
+    if (!input || !input.value.trim()) return;
+    
+    // Dispara el envío de forma automática
+    const evento = new KeyboardEvent('keypress', { key: 'Enter', bubbles: true });
+    input.dispatchEvent(evento);
+};
