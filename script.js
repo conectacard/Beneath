@@ -733,33 +733,70 @@ window.enviarMensajeTexto = function() {
     const texto = input ? input.value.trim() : "";
     const archivo = window.archivoSeleccionadoActual || (inputArchivo && inputArchivo.files[0] ? inputArchivo.files[0] : null);
 
-    // Si hay un archivo seleccionado, lo procesamos para enviarlo al chat/Supabase
     if (archivo) {
-        console.log("Enviando mensaje con archivo:", archivo.name);
-        
-        // Si tu proyecto utiliza FileReader o subida directa a Supabase, lo integramos aquí de forma limpia:
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            // Aquí se genera el payload o inserción a tu base de datos de Supabase con el archivo (imagen, video o PDF)
-            if (typeof window.guardarMensajeConArchivoEnSupabase === 'function') {
-                window.guardarMensajeConArchivoEnSupabase(archivo, e.target.result, texto);
-            }
-        };
-        reader.readAsDataURL(archivo);
+        const lector = new FileReader();
+        lector.onload = function(e) {
+            const base64Data = e.target.result;
+            const usuarioActivo = localStorage.getItem("beneath_identity") || "USUARIO";
 
-        // Limpiamos la selección de archivo
+            const tamanoKB = (archivo.size / 1024).toFixed(1);
+            const tamanoLegible = tamanoKB > 1024 ? (tamanoKB / 1024).toFixed(1) + " MB" : tamanoKB + " KB";
+
+            let icono = "📄";
+            if (archivo.type.includes("image")) icono = "🖼️";
+            else if (archivo.type.includes("video")) icono = "📹";
+            else if (archivo.type.includes("pdf")) icono = "📕";
+            else if (archivo.type.includes("word") || archivo.name.endsWith(".docx")) icono = "📝";
+
+            const nuevoItem = {
+                usuario: usuarioActivo,
+                texto: texto || archivo.name,
+                esArchivo: true,
+                nombreArchivo: archivo.name,
+                tamanoLegible: tamanoLegible,
+                icono: icono,
+                dataUrl: base64Data,
+                tipoMime: archivo.type,
+                timestamp: Date.now(),
+                hora: obtenerHoraActual()
+            };
+
+            guardarMensajeEnNube(nuevoItem);
+        };
+        lector.readAsDataURL(archivo);
+
         window.archivoSeleccionadoActual = null;
-        if (inputArchivo) {
-            inputArchivo.value = "";
-        }
-        if (input) {
-            input.value = "";
-        }
+        if (inputArchivo) inputArchivo.value = "";
+        if (input) input.value = "";
         return;
     }
 
-    // Si solo es texto
+    // Si es solo texto
     if (!input || !texto) return;
-    const evento = new KeyboardEvent('keypress', { key: 'Enter', bubbles: true });
-    input.dispatchEvent(evento);
+    const usuarioActivo = localStorage.getItem("beneath_identity") || "USUARIO";
+    const nuevoItem = {
+        usuario: usuarioActivo,
+        texto: texto,
+        esArchivo: false,
+        timestamp: Date.now(),
+        hora: obtenerHoraActual()
+    };
+
+    guardarMensajeEnNube(nuevoItem);
+    input.value = "";
+    input.focus();
 };
+
+// Asegurar captura sincronizada del input archivo
+document.addEventListener("DOMContentLoaded", () => {
+    const inputArchivo = document.getElementById("input-archivo");
+    if (inputArchivo) {
+        inputArchivo.addEventListener("change", (e) => {
+            const archivo = e.target.files[0];
+            if (archivo) {
+                window.archivoSeleccionadoActual = archivo;
+                console.log("Archivo multimedia listo para enviar:", archivo.name);
+            }
+        });
+    }
+});
