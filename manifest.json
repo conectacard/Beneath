@@ -1,6 +1,6 @@
 {
-  "name": "Agenda Escolar 2026 - Control de Actividades",
-  "short_name": "AgendaEscolar",
+  "name": "Calendario - Agenda Personal",
+  "short_name": "Calendario",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#020617",
